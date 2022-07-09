@@ -54,7 +54,9 @@ let persons = [
 
 //routes get persons list
 app.get("/api/persons", (request, response) => {
-  response.status(200).json(persons);
+  Phone.find({}).then((notes) => {
+    response.json(notes);
+  });
 });
 
 //routes get a person id
