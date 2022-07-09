@@ -5,7 +5,7 @@ const cors = require("cors");
 const app = express();
 
 //initialize PORT
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 //turns json into an object and place it in req.body for use
 app.use(express.json());
