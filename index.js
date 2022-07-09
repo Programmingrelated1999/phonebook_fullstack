@@ -12,6 +12,8 @@ app.use(express.json());
 
 app.use(cors());
 
+app.use(express.static("build"));
+
 //create morgan token to add a person token which is person object from incoming req body
 morgan.token("person", (req) => {
   const person = JSON.stringify(req.body);
