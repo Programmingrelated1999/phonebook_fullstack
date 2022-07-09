@@ -1,8 +1,12 @@
 //import express and initialize app
+//import morgan, cors, dotenv to create phoneNumber which is the models
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
+require("dotenv").config();
 const app = express();
+const PhoneNumber = require("./models/phonenumber");
+const phonenumber = require("./models/phonenumber");
 
 //initialize PORT
 const PORT = process.env.PORT || 3001;
@@ -12,6 +16,7 @@ app.use(express.json());
 
 app.use(cors());
 
+//using build which stores front-end information
 app.use(express.static("build"));
 
 //create morgan token to add a person token which is person object from incoming req body
@@ -54,33 +59,29 @@ let persons = [
 
 //routes get persons list
 app.get("/api/persons", (request, response) => {
-  Phone.find({}).then((notes) => {
-    response.json(notes);
+  PhoneNumber.find({}).then((notes) => {
+    response.status(200).json(notes);
   });
 });
 
 //routes get a person id
 app.get("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  const person = persons.find((person) => person.id === id);
-
-  //if person is valid return the person, else return error
-  if (person) {
-    response.status(200).json(person);
-  } else {
-    response.status(404).end();
-  }
+  PhoneNumber.findById(request.params.id).then((number) => {
+    response.status(200).json(number);
+  });
 });
 
 //routes get an info
 app.get("/info", (request, response) => {
-  const length = persons.length;
-  const date = new Date();
-  response
-    .status(200)
-    .send(
-      `<p>Phonebook has info for ${length} people. <br/> The date is ${date} </p>`
-    );
+  PhoneNumber.find({}).then((number) => {
+    const length = number.length;
+    const date = new Date();
+    response
+      .status(200)
+      .send(
+        `<p>Phonebook has info for ${length} people. <br/> The date is ${date} </p>`
+      );
+  });
 });
 
 //delete a person
@@ -95,19 +96,19 @@ app.delete("/api/persons/:id", (request, response) => {
 //set a new person based on req.body and check if person is not already on the list
 //check to make sure user enter all fields and then add person to the list
 app.post("/api/persons", (request, response) => {
-  const id = Math.floor(Math.random() * 10000);
-  const newPerson = { ...request.body, id: id };
-  for (const person of persons) {
-    if (newPerson.name === person.name) {
-      response.status(400).json({ error: "name must be unique" });
-    } else if (!newPerson.name) {
-      response.status(400).json({ error: "name cannot be empty" });
-    } else if (!newPerson.number) {
-      response.status(400).json({ error: "number cannot be empty" });
-    }
+  const body = request.body;
+  if (body.name === undefined || body.number === undefined) {
+    return response.status(400).json({ error: "content missing" });
   }
-  persons = persons.concat(newPerson);
-  response.status(200).json(newPerson);
+
+  const phoneNumber = new PhoneNumber({
+    name: body.name,
+    number: body.number,
+  });
+
+  phoneNumber.save().then((number) => {
+    response.status(200).json(number);
+  });
 });
 
 //unknown Endpoint which shows an error
