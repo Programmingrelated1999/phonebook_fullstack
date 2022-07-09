@@ -50,10 +50,6 @@ let persons = [
   },
 ];
 
-app.get("/", (request, response) => {
-  response.status(200).json(persons);
-});
-
 //routes get persons list
 app.get("/api/persons", (request, response) => {
   response.status(200).json(persons);
