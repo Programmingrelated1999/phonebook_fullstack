@@ -8,16 +8,22 @@ const app = express();
 const PhoneNumber = require("./models/phonenumber");
 const phonenumber = require("./models/phonenumber");
 
-//initialize PORT
-const PORT = process.env.PORT || 3001;
+//using build which stores front-end information
+app.use(express.static("build"));
 
 //turns json into an object and place it in req.body for use
 app.use(express.json());
 
+//allows cross origin resource sharing with cors library
 app.use(cors());
 
-//using build which stores front-end information
-app.use(express.static("build"));
+//unknown Endpoint which shows an error
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: "unknown endpoint" });
+};
+
+//initialize PORT
+const PORT = process.env.PORT || 3001;
 
 //create morgan token to add a person token which is person object from incoming req body
 morgan.token("person", (req) => {
@@ -65,10 +71,18 @@ app.get("/api/persons", (request, response) => {
 });
 
 //routes get a person id
-app.get("/api/persons/:id", (request, response) => {
-  PhoneNumber.findById(request.params.id).then((number) => {
-    response.status(200).json(number);
-  });
+app.get("/api/persons/:id", (request, response, next) => {
+  PhoneNumber.findById(request.params.id)
+    .then((number) => {
+      if (number) {
+        response.status(200).json(number);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch((error) => {
+      next(error);
+    });
 });
 
 //routes get an info
@@ -85,11 +99,12 @@ app.get("/info", (request, response) => {
 });
 
 //delete a person
-app.delete("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  persons = persons.filter((person) => person.id !== id);
-
-  response.status(204).end();
+app.delete("/api/persons/:id", (request, response, next) => {
+  PhoneNumber.findByIdAndRemove(request.params.id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
 
 //post a person. generate a random Number large enough to not be duplicate
@@ -111,12 +126,35 @@ app.post("/api/persons", (request, response) => {
   });
 });
 
-//unknown Endpoint which shows an error
-const unknownEndpoint = (request, response) => {
-  response.status(404).send({ error: "unknown endpoint" });
+//update person by entering the same name
+app.put("/api/persons/:id", (request, response, next) => {
+  const body = request.body;
+  const person = {
+    number: body.number,
+  };
+
+  PhoneNumber.findByIdAndUpdate(request.params.id, person, { new: true })
+    .then((updatedPerson) => {
+      response.json(updatedPerson);
+    })
+    .catch((error) => next(error));
+});
+
+//using the unknown endpoints to display unknown endpoint object
+app.use(unknownEndpoint);
+
+//error handlers
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
 };
 
-app.use(unknownEndpoint);
+app.use(errorHandler);
 
 //listen on port
 app.listen(PORT, () => {
