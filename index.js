@@ -110,7 +110,7 @@ app.delete("/api/persons/:id", (request, response, next) => {
 //post a person. generate a random Number large enough to not be duplicate
 //set a new person based on req.body and check if person is not already on the list
 //check to make sure user enter all fields and then add person to the list
-app.post("/api/persons", (request, response) => {
+app.post("/api/persons", (request, response, next) => {
   const body = request.body;
   if (body.name === undefined || body.number === undefined) {
     return response.status(400).json({ error: "content missing" });
@@ -121,9 +121,12 @@ app.post("/api/persons", (request, response) => {
     number: body.number,
   });
 
-  phoneNumber.save().then((number) => {
-    response.status(200).json(number);
-  });
+  phoneNumber
+    .save()
+    .then((number) => {
+      response.status(200).json(number);
+    })
+    .catch((error) => next(error));
 });
 
 //update person by entering the same name
@@ -149,6 +152,8 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === "CastError") {
     return response.status(400).send({ error: "malformatted id" });
+  } else if (error.name === "ValidationError") {
+    return response.status(400).json({ error: error.message });
   }
 
   next(error);
